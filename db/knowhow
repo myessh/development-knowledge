@@ -1,0 +1,67 @@
+# recursive oracle / mssql / mysql
+  CREATE TABLE recursive_test(dno int NOT NULL, pdno int NULL,dname varchar(100));
+  INSERT INTO recursive_test (dno,pdno,dname) values(1,NULL,'1');
+  INSERT INTO recursive_test (dno,pdno,dname) values(2,1,'1-2');
+  INSERT INTO recursive_test (dno,pdno,dname) values(3,1,'1-3');
+  INSERT INTO recursive_test (dno,pdno,dname) values(4,2,'1-2-4');
+  INSERT INTO recursive_test (dno,pdno,dname) values(5,3,'1-3-5');
+
+  oracle
+    with cte (dno,pdno,dname,dline) as (
+      SELECT dno,pdno,dname,cast(dno AS varchar(1000)) dline
+      from recursive_test
+      where dno=1
+      union ALL 
+      SELECT a.dno,a.pdno,a.dname,CAST(concat(concat(b.dline,'-'),a.dno) AS varchar(1000)) dline
+      from cte b
+      INNER JOIN recursive_test a ON a.pdno=b.dno
+    )
+    SELECT * FROM cte
+  mssql
+    with cte (dno,pdno,dname,dline) as (
+      SELECT dno,pdno,dname,cast(dno AS varchar(1000)) dline
+      from recursive_test
+      where dno=1
+      union ALL 
+      SELECT a.dno,a.pdno,a.dname,cast(concat(concat(b.dline,'-'),a.dno) as varchar(1000)) dline
+      from cte b
+      INNER JOIN recursive_test a ON a.pdno=b.dno
+    )
+    SELECT * FROM cte
+  mysql
+    with recursive cte (dno,pdno,dname,dline) as (
+      SELECT dno,pdno,dname,cast(dno AS char(1000)) dline
+      from recursive_test
+      where dno=1
+      union ALL 
+      SELECT a.dno,a.pdno,a.dname,cast(concat(concat(b.dline,'-'),a.dno) as char(1000)) dline
+      from cte b
+      INNER JOIN recursive_test a ON a.pdno=b.dno
+    )
+    SELECT * FROM cte
+    
+# join update oracle / mssql / mysql
+  oracle
+    MERGE INTO table1 U
+    USING (
+      SELECT blabla
+      FROM table1 A
+      LEFT OUTER JOIN table2 B ON B.blabla
+      WHERE A.blabla
+    ) A ON (U.blabla)
+    WHEN MATCHED THEN
+      UPDATE SET U.column1 = @value
+  mssql
+    UPDATE table1 
+      SET column1 = @value
+    FROM table1 A
+    LEFT OUTER JOIN table2 B on b.blabla
+    WHERE A.blabla
+  mysql
+    UPDATE table1 U
+    LEFT OUTER JOIN table2 B ON B.blabla
+    SET U.column1=@value
+    WHERE U.blabla
+
+
+  
